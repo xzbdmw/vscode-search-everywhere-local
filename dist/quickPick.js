@@ -19,6 +19,7 @@ let firstOpen = true
 let recordedPosition = null
 let activeEditor = null
 let recordedUri = null
+let accept = false
 function disposeOnDidChangeValueEventListeners() {
     exports.quickPick
         .getOnDidChangeValueEventListeners()
@@ -73,7 +74,7 @@ function openItem(qpItem, viewColumn = vscode.ViewColumn.Active) {
 }
 function selectQpItem(editor, qpItem) {
     editor.selection = getSelectionForQpItem(qpItem, (0, config_1.fetchShouldHighlightSymbol)());
-    editor.revealRange(qpItem.range, vscode.TextEditorRevealType.InCenterIfOutsideViewport);
+    editor.revealRange(qpItem.range, vscode.TextEditorRevealType.Default);
 }
 function getSelectionForQpItem(qpItem, shouldHighlightSymbol) {
     const { range } = qpItem;
@@ -134,6 +135,7 @@ function shouldLoadHelpItems(text) {
         text === helpPhrase);
 }
 function handleDidAccept() {
+    accept = true
     return __awaiter(this, void 0, void 0, function* () {
         const control = exports.quickPick.getControl();
         const selectedItem = control.selectedItems[0];
@@ -141,7 +143,8 @@ function handleDidAccept() {
     });
 }
 function handleDidHide() {
-    if (recordedUri && recordedPosition) {
+    if (recordedUri && recordedPosition && !accept) {
+        console.log("hide")
         vscode.workspace.openTextDocument(recordedUri).then(document => {
             vscode.window.showTextDocument(document).then(editor => {
                 const newPosition = new vscode.Position(recordedPosition.line, recordedPosition.character);
@@ -150,7 +153,9 @@ function handleDidHide() {
             });
         });
     }
-
+    if (accept) {
+        accept = false
+    }
     if (currentDecoration) {
         currentDecoration.dispose()
     }
