@@ -64,7 +64,7 @@ function loadItemsForFilterPhrase(qpItem) {
 }
 function openItem(qpItem, viewColumn = vscode.ViewColumn.Active) {
     return __awaiter(this, void 0, void 0, function* () {
-        const uriOrFileName = qpItem.uri.scheme === "file" ? qpItem.uri.path : qpItem.uri;
+        const uriOrFileName = (qpItem.uri.scheme === "file" || qpItem.uri.scheme === "vscode-remote") ? qpItem.uri.path : qpItem.uri;
         const document = uriOrFileName instanceof vscode.Uri
             ? yield vscode.workspace.openTextDocument(uriOrFileName)
             : yield vscode.workspace.openTextDocument(uriOrFileName);
@@ -193,10 +193,7 @@ function registerEventListeners() {
 }
 
 function handleDidChangeActive(items) {
-    if (items.length > 0) {
-        const activeItem = items[0];
-        peekItem(activeItem);
-    }
+    peekItem(items[0]);
 }
 
 function createRangeForQpItem(qpItem) {
@@ -208,13 +205,24 @@ function createRangeForQpItem(qpItem) {
 }
 
 function peekItem(qpItem) {
+    console.log(qpItem)
+    console.log("enter peek")
     if (firstOpen) {
         firstOpen = false
         return null
     }
     return __awaiter(this, void 0, void 0, function* () {
-        if (qpItem.uri && qpItem.uri.scheme === "file") {
-            const document = yield vscode.workspace.openTextDocument(qpItem.uri);
+        console.log("enter function")
+        if (qpItem.uri && (qpItem.uri.scheme === "file" || qpItem.uri.scheme === "vscode-remote")) {
+            console.log("uri" + qpItem.uri)
+            let uri = null
+            if (qpItem.uri.external) {
+                uri = vscode.Uri.parse(qpItem.uri.external);
+            } else {
+                uri = vscode.Uri.parse(qpItem.uri.path);
+            }
+            console.log(uri)
+            const document = yield vscode.workspace.openTextDocument(uri);
             vscode.window.showTextDocument(document, {
                 preview: true,
                 preserveFocus: true
