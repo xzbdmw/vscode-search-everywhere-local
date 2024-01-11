@@ -20,6 +20,7 @@ let recordedPosition = null
 let activeEditor = null
 let recordedUri = null
 let accept = false
+let activeItems = false
 function disposeOnDidChangeValueEventListeners() {
     exports.quickPick
         .getOnDidChangeValueEventListeners()
@@ -63,6 +64,10 @@ function loadItemsForFilterPhrase(qpItem) {
     exports.quickPick.loadItems();
 }
 function openItem(qpItem, viewColumn = vscode.ViewColumn.Active) {
+    activeItems = false
+    firstOpen = true
+    console.log("first open changed to true in open item funciton")
+    console.log("first open" + firstOpen)
     return __awaiter(this, void 0, void 0, function* () {
         const uriOrFileName = (qpItem.uri.scheme === "file" || qpItem.uri.scheme === "vscode-remote") ? qpItem.uri.path : qpItem.uri;
         const document = uriOrFileName instanceof vscode.Uri
@@ -135,6 +140,8 @@ function shouldLoadHelpItems(text) {
         text === helpPhrase);
 }
 function handleDidAccept() {
+    firstOpen = true
+    console.log('firstOpen changed to:', firstOpen, 'at handleDidAccept at ', new Date());
     accept = true
     return __awaiter(this, void 0, void 0, function* () {
         const control = exports.quickPick.getControl();
@@ -143,13 +150,16 @@ function handleDidAccept() {
     });
 }
 function handleDidHide() {
+    activeItems = false
+    firstOpen = true
+    console.log('firstOpen changed to:', firstOpen, 'at handleDidHide at', new Date());
     if (recordedUri && recordedPosition && !accept) {
         console.log("hide")
         vscode.workspace.openTextDocument(recordedUri).then(document => {
             vscode.window.showTextDocument(document).then(editor => {
                 const newPosition = new vscode.Position(recordedPosition.line, recordedPosition.character);
                 editor.selection = new vscode.Selection(newPosition, newPosition);
-                editor.revealRange(new vscode.Range(newPosition, newPosition));
+                editor.revealRange(new vscode.Range(newPosition, newPosition), vscode.TextEditorRevealType.InCenter);
             });
         });
     }
@@ -159,7 +169,6 @@ function handleDidHide() {
     if (currentDecoration) {
         currentDecoration.dispose()
     }
-    firstOpen = true
     exports.quickPick.setText("");
 }
 function handleDidTriggerItemButton({ item: qpItem, }) {
@@ -171,7 +180,7 @@ function init() {
     const control = vscode.window.createQuickPick();
     setControl(control);
     control.matchOnDetail = true;
-    control.matchOnDescription = true;
+    control.matchOnDescription = false;
     exports.quickPick.fetchConfig();
     fetchHelpData();
     toggleKeepingSeparatorsVisibleOnFiltering();
@@ -193,6 +202,22 @@ function registerEventListeners() {
 }
 
 function handleDidChangeActive(items) {
+    console.log("enter handleDidAccept")
+    const control = exports.quickPick.getControl();
+    if (control.activeItems[0] == control.items[1] && !activeItems) {
+        console.log("active items 0:")
+        console.log(control.activeItems[0])
+        console.log("items 1:")
+        console.log(control.items[1])
+        activeItems = true
+        return
+    } else {
+        console.log("dont equal")
+        console.log("active items 0:")
+        console.log(control.activeItems[0])
+        console.log("items 1:")
+        console.log(control.items[1])
+    }
     peekItem(items[0]);
 }
 
@@ -207,14 +232,19 @@ function createRangeForQpItem(qpItem) {
 function peekItem(qpItem) {
     console.log(qpItem)
     console.log("enter peek")
-    if (firstOpen) {
-        firstOpen = false
-        return null
-    }
+    // if (firstOpen) {
+    //     console.log("firstopen:  " + firstOpen)
+    //     console.log("set first open to false")
+    //     firstOpen = false
+    //     return __awaiter(this, void 0, void 0, function* () { console.log("this is a firstopen=true awaiter") })
+    // }
+    // console.log("this shouldn't be printed if set first open is set to false")
     return __awaiter(this, void 0, void 0, function* () {
         console.log("enter function")
         if (qpItem.uri && (qpItem.uri.scheme === "file" || qpItem.uri.scheme === "vscode-remote")) {
-            console.log("uri" + qpItem.uri)
+            console.log("qpItem")
+            console.log(qpItem)
+            console.log("firstopen inside function:  " + firstOpen)
             let uri = null
             if (qpItem.uri.external) {
                 uri = vscode.Uri.parse(qpItem.uri.external);
